@@ -1,0 +1,58 @@
+name:                   massiv-nn
+version:                0.0.0
+synopsis:               Neural networks using massiv
+description:
+
+author:                 Bogdan Penkovsky
+maintainer:
+category:               AI
+build-type:             Simple
+extra-source-files:     README.md
+cabal-version:          >=1.10
+
+library
+  default-language:     Haskell2010
+  exposed-modules:
+    NeuralNetwork
+
+  -- other-modules:
+
+  build-depends:
+        base                    >= 4.7 && < 4.13
+      , massiv
+      , mwc-random
+      , random
+
+  hs-source-dirs:
+      src
+
+executable day1
+  hs-source-dirs:      app
+  main-is:             Day1.hs
+  ghc-options:
+    -O2
+    -Wall
+    -threaded
+    -rtsopts
+  default-language:    Haskell2010
+  build-depends:
+        base                    >= 4.7  && < 4.13
+      , bytestring
+      , massiv
+      , massiv-nn
+      , time
+
+executable day2
+  hs-source-dirs:      app
+  main-is:             Day2.hs
+  ghc-options:
+    -O2
+    -Wall
+    -threaded
+    -rtsopts
+  default-language:    Haskell2010
+  build-depends:
+        base                    >= 4.7  && < 4.13
+      , bytestring
+      , massiv
+      , massiv-nn
