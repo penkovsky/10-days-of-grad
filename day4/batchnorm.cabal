@@ -1,0 +1,53 @@
+name:                   batchnorm
+version:                0.0.0
+synopsis:               Neural networks with batchnorm
+description:
+
+author:                 Bogdan Penkovsky
+maintainer:
+category:               AI
+build-type:             Simple
+extra-source-files:     README.md
+cabal-version:          >=1.10
+
+library
+  default-language:     Haskell2010
+  exposed-modules:
+    NeuralNetwork
+    , Shuffle
+
+  -- other-modules:
+
+  build-depends:
+        base                    >= 4.7 && < 4.13
+      , massiv
+      , mwc-random
+      , random
+      , streamly
+      , MonadRandom
+      , array
+
+  hs-source-dirs:
+      src
+
+executable mnist
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:
+    -O2
+    -Wall
+    -threaded
+    -rtsopts
+  default-language:    Haskell2010
+  build-depends:
+        base                    >= 4.7  && < 4.13
+      , bytestring
+      , massiv
+      , random
+      , streamly
+      , batchnorm
+      , mnist-idx
+      , vector
+      , transformers
+      , deepseq
+      , split
