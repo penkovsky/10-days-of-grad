@@ -1,6 +1,10 @@
 # Batch normalization
 
-[The tutorial](http://penkovsky.com/post/neural-networks-4/) about neural networks.
+![Handwritten digit](http://penkovsky.com/img/posts/mnist/mnist-five.png)
+
+This project's aim is to demonstrate batch normalization using handwritten
+digits recognition task as an example. Relevant documentation is in
+[the tutorial about neural networks](http://penkovsky.com/post/neural-networks-4/).
 
 ## How To Build
 
