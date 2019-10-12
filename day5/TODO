@@ -1,0 +1,4 @@
+* Visualize to check if convolutions produce desired feature maps
+* Hlint
+* Implement the algorithm from "Focusing on the biggest losers" paper
+* Benchmark conv2d with Array P
