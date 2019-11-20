@@ -655,9 +655,9 @@ randConv2d sz = do
 
 randNetwork :: IO (ConvNet Float)
 randNetwork = do
-  _conv1 <- randConv2d (Sz4 3 1 5 5)
-  _conv2 <- randConv2d (Sz4 3 3 5 5)
-  let [i, h1, h2, o] = [3 * 7 * 7, 120, 84, 10]
+  _conv1 <- randConv2d (Sz4 6 1 5 5)
+  _conv2 <- randConv2d (Sz4 16 6 5 5)
+  let [i, h1, h2, o] = [16 * 7 * 7, 120, 84, 10]
   _fc1 <- randLinear (Sz2 i h1)
   _fc2 <- randLinear (Sz2 h1 h2)
   _fc3 <- randLinear (Sz2 h2 o)

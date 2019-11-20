@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c6a526bfca167ed3415b04f3fbb0400f22e0dda56be390b21249df9e3d9cc2c0
+-- hash: ec25fe38f49a011b8271fb442cacbfbc9c720a5d2fdc817b6a820df877659543
 
 name:           conv
 version:        0.0.0
@@ -46,7 +46,7 @@ executable conv
       Paths_conv
   hs-source-dirs:
       app
-  ghc-options: -O2 -Wall -threaded -rtsopts -with-rtsopts=-N6
+  ghc-options: -O2 -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
     , array
@@ -73,7 +73,7 @@ benchmark default
       Paths_conv
   hs-source-dirs:
       bench
-  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N6
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
     , array

@@ -106,7 +106,7 @@ main = do
 
   net' <- train TrainSettings { _printEpochs = 1
                               , _lr = 0.01
-                              , _totalEpochs = 10
+                              , _totalEpochs = 30
                               } net (trainS, testS)
 
   return ()
