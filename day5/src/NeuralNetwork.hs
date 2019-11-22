@@ -69,7 +69,7 @@ import           Data.Massiv.Array hiding ( map, zip, zipWith, flatten )
 import qualified Data.Massiv.Array as A
 import           Data.Ord
 import           GHC.Generics ( Generic )
-import           Lens.Micro
+-- import           Lens.Micro
 import           Lens.Micro.TH
 import           Numeric.Backprop
 import           Numeric.Backprop.Class ( addNum )
@@ -144,8 +144,7 @@ lenet l = constVar
           ~> relu
           ~> maxpool
           -- Layer #2
-          ~> sameConv2d (l ^^. conv2)
-          -- ~> validConv2d (l ^^. conv2)
+          ~> validConv2d (l ^^. conv2)
           ~> relu
           ~> maxpool
 
@@ -304,7 +303,6 @@ _deconv2d :: Padding Ix2 Float
 _deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
   where
     (Sz (cout :> dz1 :. dz2)) = size dz
-    (Sz (cin :> _ :. _)) = size x
     sten i =
       let kernel2d = dz !> i
           kernel3d = computeAs U $ resize' (Sz3 1 dz1 dz2) kernel2d :: Volume Float
@@ -320,7 +318,6 @@ _deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
     base = rsz base0
     res = foldl' (\prev ch -> let conv = rsz. applyStencil pad3 (sten ch) $ x
                               in computeAs U $ append' 4 prev conv) base [1..cout - 1]
-                              -- in computeAs U $ append' 4 conv prev) base [1..cout - 1]
 {-# INLINE _deconv2d #-}
 
 rot180 :: Index ix => Array U ix Float -> Array D ix Float
@@ -333,11 +330,18 @@ conv2d :: Reifies s W
        -> BVar s (Conv2d Float)
        -> BVar s (Volume4 Float)
        -> BVar s (Volume4 Float)
-conv2d p = liftOp2. op2 $ \(Conv2d w) x ->
-  (conv2d_ p w x, \dz -> let dw = conv2d'' p x dz
-                             p1 = p  -- TODO
-                             dx = conv2d' p1 w dz
-                         in (Conv2d dw, dx) )
+conv2d p@(Padding (Sz (p11 :. p12)) (Sz (p21 :. p22)) be) = liftOp2. op2 $ \(Conv2d w) x ->
+    let conv = conv2d_ p w x
+     in (conv, \dz -> let dw = conv2d'' p x dz
+                          Sz (_ :> _ :> h0 :. w0) = size x
+                          Sz (_ :> _ :> h1 :. w1) = size conv
+                          ch = h0 - h1
+                          cw = w0 - w1
+                          szp1' = (p11 + ch) :. (p12 + cw)
+                          szp2' = (p21 + ch) :. (p22 + cw)
+                          p1 = Padding (Sz szp1') (Sz szp2') be
+                          dx = conv2d' p1 w dz
+                       in (Conv2d dw, dx) )
 
 instance (Index ix, Num e, Unbox e) => Backprop (Array U ix e) where
     zero x = A.replicate Par (size x) 0
@@ -350,7 +354,7 @@ linear :: Reifies s W
        -> BVar s (Matrix Float)
        -> BVar s (Matrix Float)
 linear = liftOp2. op2 $ \(Linear w b) x ->
-  let prod = maybe (error "Dimension mismatch") id (x |*| w)
+  let prod = maybe (error $ "Dimension mismatch " ++ show (size x, size w)) id (x |*| w)
       lin = maybe (error "Dimension mismatch") compute (delay prod .+. (b `rowsLike` x))
   in (lin, \dZ -> let dW = linearW' x dZ
                       dB = bias' dZ
@@ -440,10 +444,10 @@ maxpool :: Reifies s W
 maxpool = liftOp1. op1 $ \x ->
   let out = maxpool_ x
       s = Stride (1 :> 1 :> 2 :. 2)
-      outUp = computeAs U $ upsample' s out
+      outUp = computeAs U $ zoom s out
       maxima = A.zipWith (\a b -> if a == b then 1 else 0) outUp x
-  in (out, \dz -> let dzUp = computeAs U $ upsample' s dz
-                  in maybe (error "Dimensions") compute (maxima .*. delay dzUp))
+  in (out, \dz -> let dzUp = computeAs U $ zoom s dz
+                  in maybe (error $ "Dimensions problem " ++ show (size out, size dz, size outUp, size maxima, size dzUp)) compute (maxima .*. delay dzUp))
 
 -- Test maxpool gradients
 -- testC :: Volume4 Float
@@ -657,7 +661,7 @@ randNetwork :: IO (ConvNet Float)
 randNetwork = do
   _conv1 <- randConv2d (Sz4 6 1 5 5)
   _conv2 <- randConv2d (Sz4 16 6 5 5)
-  let [i, h1, h2, o] = [16 * 7 * 7, 120, 84, 10]
+  let [i, h1, h2, o] = [16 * 5 * 5, 120, 84, 10]
   _fc1 <- randLinear (Sz2 i h1)
   _fc2 <- randLinear (Sz2 h1 h2)
   _fc3 <- randLinear (Sz2 h2 o)
