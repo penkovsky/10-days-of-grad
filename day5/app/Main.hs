@@ -28,8 +28,7 @@ loadMNIST fpI fpL = runMaybeT $ do
     i <- MaybeT $ decodeIDXFile fpI
     l <- MaybeT $ decodeIDXLabelsFile fpL
     d <- MaybeT. return $ force $ labeledIntData l i
-    r <- return $ map _conv d
-    return r
+    return $ map _conv d
   where
     _conv :: (Int, V.Vector Int) -> (Volume4 Float, Matrix Float)
     _conv (label, v) = (v1, toOneHot10 label)
