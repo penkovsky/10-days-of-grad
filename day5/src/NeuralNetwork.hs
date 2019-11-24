@@ -269,9 +269,13 @@ conv2d_ (Padding (Sz szp1) (Sz szp2) be) w x = res
 -- direction.
 conv2d'
   :: Padding Ix2 Float -> Volume4 Float -> Volume4 Float -> Volume4 Float
-conv2d' p w dz = res
+conv2d' p w dz = conv2d_ p w' dz
   where
-    res = conv2d_ p (compute $ rot180 $ compute $ transposeInner w) dz
+    w' = (compute. rot180. transposeInner) w
+
+    -- Rotate image kernels by 180 degrees
+    rot180 = reverse' 1. reverse' 2
+    {-# INLINE rot180 #-}
 
 -- | Kernel gradients
 --
@@ -317,10 +321,6 @@ _deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
     res = foldl' (\prev ch -> let conv = rsz. applyStencil pad3 (sten ch) $ x
                               in computeAs U $ append' 4 prev conv) base [1..cout - 1]
 {-# INLINE _deconv2d #-}
-
-rot180 :: Index ix => Array U ix Float -> Array D ix Float
-rot180 = reverse' 1. reverse' 2
-{-# INLINE rot180 #-}
 
 -- | Differentiable 2D convolutional layer
 conv2d :: Reifies s W
