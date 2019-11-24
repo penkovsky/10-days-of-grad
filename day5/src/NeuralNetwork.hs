@@ -1,6 +1,6 @@
 -- |= Convolutional Neural Network Building Blocks
 --
--- Note that some functions have been updated w.r.t massiv-0.4.3.0,
+-- Note that some functions have been updated w.r.t massiv-0.4.4.0,
 -- most notably changed Data.Massiv.Array.Numeric
 --
 -- This work was largely inspired by
