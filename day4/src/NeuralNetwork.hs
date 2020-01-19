@@ -179,8 +179,8 @@ linearW' x dy =
   in  m `scale` prod
 
 linearX' :: Matrix Float -> Matrix Float -> Matrix Float
-linearX' w dy =
-  compute $ fromMaybe (error "linearX': Out of bounds") (dy `multiplyTransposed` w)
+linearX' w dy = compute
+  $ fromMaybe (error "linearX': Out of bounds") (dy `multiplyTransposed` w)
 
 -- | Bias gradient
 bias' :: Matrix Float -> Vector Float
@@ -198,7 +198,7 @@ softmax x =
   let x0 = compute $ expA (delay x) :: Matrix Float
       x1 = compute (_sumCols x0) :: Vector Float  -- Sumcols in this case!
       x2 = x1 `colsLike` x
-  in  (compute $ delay x0 / delay x2)
+  in  (compute $ delay x0 / x2)
 
 -- | Both forward and backward neural network passes
 pass
@@ -231,8 +231,9 @@ pass phase net (x, tgt) = (pred, grads)
    where
       -- Forward
     lin =
-      compute $ delay (fromMaybe (error "lin1: Out of bounds") (inp |*| w)) + delay
-        (b `rowsLike` inp)
+      compute
+        $ delay (fromMaybe (error "lin1: Out of bounds") (inp |*| w))
+        + (b `rowsLike` inp)
 
     (dZ, pred, t) = _pass lin layers
 
@@ -244,7 +245,7 @@ pass phase net (x, tgt) = (pred, grads)
   _pass inp (Linear' w : layers) = (dX, pred, Linear'Gradients dW : t)
    where
       -- Forward
-    lin           = compute $ fromMaybe (error "lin2: Out of bounds") (inp |*| w)
+    lin = compute $ fromMaybe (error "lin2: Out of bounds") (inp |*| w)
 
     (dZ, pred, t) = _pass lin layers
 
@@ -267,7 +268,7 @@ pass phase net (x, tgt) = (pred, grads)
 
     -- Step 2: mean subtraction
     xmu :: Matrix Float
-    xmu = compute $ delay inp - delay (b batchMu)
+    xmu = compute $ delay inp - b batchMu
 
     -- Step 3
     sq  = compute $ delay xmu ^ (2 :: Int)
@@ -283,14 +284,14 @@ pass phase net (x, tgt) = (pred, grads)
     ivar          = compute $ A.map recip sqrtvar
 
     -- Step 7
-    xhat          = delay xmu * delay (b ivar)
+    xhat          = delay xmu * b ivar
 
     -- Step 8: rescale
-    gammax        = delay (b gamma) * delay xhat
+    gammax        = b gamma * xhat
 
     -- Step 9: translate
     out0 :: Matrix Float
-    out0 = compute $ delay gammax + delay (b beta)
+    out0 = compute $ gammax + b beta
 
     out :: Matrix Float
     out = if phase == Train
@@ -307,41 +308,41 @@ pass phase net (x, tgt) = (pred, grads)
     dBeta         = compute $ _sumRows dZ
 
     -- Step 8
-    dGamma        = compute $ _sumRows (compute $ delay dZ * delay xhat)
+    dGamma        = compute $ _sumRows (compute $ delay dZ * xhat)
     dxhat :: Matrix Float
-    dxhat    = compute $ delay dZ * delay (b gamma)
+    dxhat    = compute $ delay dZ * b gamma
 
     -- Step 7
     divar    = _sumRows $ compute $ delay dxhat * delay xmu
-    dxmu1    = delay dxhat * delay (b ivar)
+    dxmu1    = delay dxhat * b ivar
 
     -- Step 6
-    dsqrtvar = A.map (negate . recip) (sqrtvar .^ 2) * delay divar
+    dsqrtvar = A.map (negate . recip) (sqrtvar .^ 2) * divar
 
     -- Step 5
-    dvar     = 0.5 `_scale` ivar * delay dsqrtvar
+    dvar     = 0.5 `_scale` ivar * dsqrtvar
 
     -- Step 4
     dsq      = compute $ m `_scale` dvar
 
     -- Step 3
-    dxmu2    = 2 `_scale` xmu * delay (b dsq)
+    dxmu2    = 2 `_scale` xmu * b dsq
 
     -- Step 2
-    dx1      = compute $ delay dxmu1 + delay dxmu2
+    dx1      = compute $ dxmu1 + dxmu2
     dmu      = A.map negate $ _sumRows dx1
 
     -- Step 1
     dx2      = b $ compute (m `_scale` dmu)
 
-    dX       = compute $ delay dx1 + delay dx2
+    dX       = compute $ delay dx1 + dx2
 
     -- Alternatively use running stats during Eval phase:
     out1 :: Matrix Float
-    out1 = compute $ (delay inp - delay (b mu)) / b
+    out1 = compute $ (delay inp - b mu) / b
       (compute $ sqrtA $ variance `addC` eps)
 
-    out2 = compute $ (delay (b gamma) * delay out1) + delay (b beta)
+    out2 = compute $ (b gamma * delay out1) + b beta
 
   _pass inp (Activation symbol : layers) = (dY, pred, NoGrad : t)
    where
@@ -511,7 +512,7 @@ var ar = compute $ m `_scale` r
  where
   mu    = br (Sz1 nRows) $ mean ar
   nRows = rows ar
-  r0    = compute $ (delay ar - delay mu) .^ 2
+  r0    = compute $ (delay ar - mu) .^ 2
   r     = _sumRows r0
   m     = recip $ fromIntegral nRows
 
