@@ -1,5 +1,7 @@
 # Batch normalization
 
+[The tutorial](http://penkovsky.com/post/neural-networks-4/) about neural networks.
+
 ## How To Build
 
 1. Install stack:
