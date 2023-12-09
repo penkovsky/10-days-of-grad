@@ -11,4 +11,20 @@
 * [Day 7](day7/): Deep Learning with Hasktorch
 * [Day 8](day8/): Model Uncertainty Estimation
 * [Day 9](day9/): Variational Autoencoders
-* Day 10
+* [Day 10](day10/): Deep Reinforcement Learning
+
+
+## Citation
+
+BibTeX:
+
+```
+@misc{tendays,
+  author = {Penkovsky, Bogdan},
+  title = {10 Days of Grad: Neural Networks and Deep Learning},
+  year = {2023},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/penkovsky/10-days-of-grad}}
+}
+```

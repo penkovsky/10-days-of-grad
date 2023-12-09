@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you wish to cite this work, please use"
+authors:
+  - family-names: Penkovsky
+    given-names: Bogdan
+    orcid: https://orcid.org/0000-0003-1851-0415
+title: "10 Days of Grad: Neural Networks and Deep Learning"
+date-released: 2023-05-08

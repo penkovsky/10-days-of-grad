@@ -1,0 +1,53 @@
+cabal-version:       2.2
+name:                rl
+version:             0.1.0.0
+synopsis:            RL algorithms
+-- description:
+license:             BSD-3-Clause
+author:              Bogdan Penkovsky
+-- category:
+build-type:          Simple
+
+common config
+  default-language:    Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch == 0.2.0.0
+                    --  , ghc-typelits-extra >= 0.3.1
+                    --  , ghc-typelits-knownnat >= 0.7
+                    --  , ghc-typelits-natnormalise >= 0.7
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , mtl
+                     , primitive
+                     , monad-extras
+                     -- Benchmark
+                     , criterion
+                     , time
+
+executable reinforce
+  import:              config
+  build-depends:       pipes >= 4.3.16
+                       , data-default-class >= 0.1.2.0
+                       , libtorch-ffi
+                       , random
+  hs-source-dirs:      .
+  main-is:             Reinforce.lhs
+  other-modules:       Lib
+                       , CartPole
+  ghc-options:         -fno-warn-partial-type-signatures -O2
+
+
+executable ppo
+  import:              config
+  build-depends:       pipes >= 4.3.16
+                       , data-default-class >= 0.1.2.0
+                       , libtorch-ffi
+                       , random
+  hs-source-dirs:      .
+  main-is:             Ppo.hs
+  other-modules:       Lib
+                       , CartPole
+  ghc-options:         -fno-warn-partial-type-signatures -O2
+
