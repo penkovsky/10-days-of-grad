@@ -21,9 +21,10 @@ module NeuralNetwork
   , sgd
 
   -- * Inference
-  , inferBinary
   , accuracy
   , avgAccuracy
+  , inferBinary
+  , winnerTakesAll
 
   -- * Helpers
   , rows
@@ -186,8 +187,8 @@ linearW' :: Matrix Float
 linearW' x dy =
   let trX = compute $ transpose x
       prod = trX |*| dy
-      k = recip $ fromIntegral (rows x)
-  in k `scale` prod
+      m = recip $ fromIntegral (rows x)
+  in m `scale` prod
 
 linearX' :: Matrix Float
         -> Matrix Float
@@ -196,9 +197,9 @@ linearX' w dy = compute $ dy `multiplyTransposed` w
 
 -- | Bias gradient
 bias' :: Matrix Float -> Vector Float
-bias' dY = compute $ k `_scale` (_sumRows dY)
+bias' dY = compute $ m `_scale` (_sumRows dY)
   where
-    k = recip $ fromIntegral $ rows dY
+    m = recip $ fromIntegral $ rows dY
 
 -- | Forward pass in a neural network:
 -- exploit Haskell lazyness to never compute the
@@ -221,7 +222,7 @@ pass
   -> NeuralNetwork Float
   -- ^ `NeuralNetwork` `Layer`s: weights and activations
   -> (Matrix Float, Matrix Float)
-  -- ^ Data set
+  -- ^ Mini-batch with labels
   -> (Matrix Float, [Gradients Float])
   -- ^ NN computation from forward pass and weights gradients
 pass phase net (x, tgt) = (pred, grads)
