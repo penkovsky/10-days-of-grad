@@ -290,19 +290,19 @@ conv2d'' p x dz = res  -- computeMap (/fromIntegral bs) res
     -- (sum. zipWith) in 5D
     dzd = delay dz
     xd = delay x
-    base = _deconv2d p (compute $ dzd !> 0) (compute $ xd !> 0)
+    base = _conv2d'' p (compute $ dzd !> 0) (compute $ xd !> 0)
     -- Accumulate gradients over the batch
     res = foldl' (\acc im ->
-      let cur = _deconv2d p (compute $ dzd !> im) (compute $ xd !> im)
+      let cur = _conv2d'' p (compute $ dzd !> im) (compute $ xd !> im)
        in acc + cur) base [1..bs-1]
 
 -- Iterate over out channels, i.e. dW has the same outer dimension as dZ (after
 -- image indexing)
-_deconv2d :: Padding Ix2 Float
+_conv2d'' :: Padding Ix2 Float
           -> Volume Float
           -> Volume Float
           -> Volume4 Float
-_deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
+_conv2d'' (Padding (Sz szp1) (Sz szp2) pb) dz x = res
   where
     (Sz (cout :> dz1 :. dz2)) = size dz
     sten i =
@@ -320,7 +320,7 @@ _deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
     base = rsz base0
     res = foldl' (\prev ch -> let conv = rsz. applyStencil pad3 (sten ch) $ x
                               in computeAs U $ append' 4 prev conv) base [1..cout - 1]
-{-# INLINE _deconv2d #-}
+{-# INLINE _conv2d'' #-}
 
 -- | Differentiable 2D convolutional layer
 conv2d :: Reifies s W
