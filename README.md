@@ -1,5 +1,7 @@
 # 10 Days Of Grad: Deep Learning From The First Principles
 
+## Neural networks in Haskell
+
 * [Day 1](day1/): Neural network basics
 * [Day 2](day2/): Multilayer neural networks
 * [Day 3](day3/): Automatic differentiation
