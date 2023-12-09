@@ -1,0 +1,90 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 9355fbd64c7d0ea59bc14589e6d9c5357aa083763ce59ed5471aa2902850262e
+
+name:           conv
+version:        0.0.0
+synopsis:       Convolutional neural networks
+category:       AI
+author:         Bogdan Penkovsky
+build-type:     Simple
+extra-source-files:
+    README.md
+
+library
+  exposed-modules:
+      NeuralNetwork
+      Shuffle
+      Weights
+  other-modules:
+      Paths_conv
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fwarn-missing-signatures
+  build-depends:
+      MonadRandom
+    , array
+    , backprop
+    , base >=4.7 && <4.13
+    , deepseq
+    , massiv >=0.4.4.0 && <0.5
+    , microlens
+    , microlens-th
+    , mwc-random
+    , one-liner
+    , one-liner-instances
+    , streamly
+  default-language: Haskell2010
+
+executable conv
+  main-is: Main.hs
+  other-modules:
+      Paths_conv
+  hs-source-dirs:
+      app
+  ghc-options: -O2 -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      MonadRandom
+    , array
+    , backprop
+    , base >=4.7 && <4.13
+    , conv
+    , deepseq
+    , massiv >=0.4.4.0 && <0.5
+    , massiv-io
+    , microlens
+    , microlens-th
+    , mnist-idx
+    , mwc-random
+    , split
+    , streamly
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+benchmark default
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_conv
+  hs-source-dirs:
+      bench
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      MonadRandom
+    , array
+    , backprop
+    , base >=4.7 && <4.13
+    , conv
+    , criterion
+    , deepseq
+    , massiv >=0.4.4.0 && <0.5
+    , microlens
+    , microlens-th
+    , mwc-random
+    , streamly
+  default-language: Haskell2010
