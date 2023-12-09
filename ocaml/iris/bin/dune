@@ -1,0 +1,4 @@
+(executable
+ (public_name iris)
+ (name main)
+ (libraries iris lacaml csv))
