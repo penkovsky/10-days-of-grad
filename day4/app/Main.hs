@@ -51,6 +51,35 @@ mnistStream batchSize fpI fpL = do
       dta' = zip vs' labs'
   return $ S.fromList dta'
 
+data TrainSettings = TrainSettings
+  { _printEpochs :: Int  -- Print every N epochs
+  , _lr :: Float  -- Learning rate
+  , _totalEpochs :: Int  -- Number of training epochs
+  }
+
+train
+  :: TrainSettings
+  -> NeuralNetwork Float
+  -> (SerialT IO (Matrix Float, Matrix Float),
+      SerialT IO (Matrix Float, Matrix Float))
+  -> IO (NeuralNetwork Float)
+train TrainSettings { _printEpochs = printEpochs
+                    , _lr = lr
+                    , _totalEpochs = totalEpochs
+                    } net (trainS, testS) = do
+  (net', _) <- iterN (totalEpochs `div` printEpochs) (\(net0, j) -> do
+    net1 <- sgd lr printEpochs net0 trainS
+
+    tacc <- net1 `avgAccuracy` trainS :: IO Float
+    putStr $ printf "%d Training accuracy %.1f" (j :: Int) tacc
+
+    acc <- net1 `avgAccuracy` testS :: IO Float
+    putStrLn $ printf "  Validation accuracy %.1f" acc
+
+    return (net1, j + printEpochs)
+    ) (net, 1)
+  return net'
+
 main :: IO ()
 main = do
   trainS <- mnistStream 1000 "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
@@ -84,24 +113,16 @@ main = do
              , Linear w3 b3
              ]
 
-  -- Crucial parameters: initial weights magnitude and
-  -- learning rate (lr)
-  let epochs = 10
-      lr = 0.1
+  putStrLn "SGD + batchnorm"
+  net' <- train TrainSettings { _printEpochs = 1
+                              , _lr = 0.1
+                              , _totalEpochs = 10
+                              } net (trainS, testS)
 
-  net' <- sgd lr epochs net trainS
-  net2' <- sgd lr epochs net2 trainS
+  putStrLn "SGD"
+  net2' <- train TrainSettings { _printEpochs = 1
+                               , _lr = 0.1
+                               , _totalEpochs = 10
+                               } net2 (trainS, testS)
 
-  putStrLn $ printf "%d training epochs" epochs
-
-  tacc <- net' `avgAccuracy` trainS
-  putStrLn $ printf "Training accuracy (SGD + batchnorm) %.1f" tacc
-
-  acc <- net' `avgAccuracy` testS
-  putStrLn $ printf "Validation accuracy (SGD + batchnorm) %.1f" acc
-
-  tacc2 <- net2' `avgAccuracy` trainS
-  putStrLn $ printf "Training accuracy (SGD) %.1f" tacc2
-
-  acc2 <- net2' `avgAccuracy` testS
-  putStrLn $ printf "Validation accuracy (SGD) %.1f" acc2
+  return ()
