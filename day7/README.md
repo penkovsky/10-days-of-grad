@@ -10,6 +10,10 @@ First, download MNIST data:
 
 Next, launch Hasktorch Docker container
 
+    docker run -it --rm -p 8888:8888 -v $(pwd):/home/ubuntu/data htorch/hasktorch-jupyter:latest-cpu
+
+or if you have a GPU
+
     docker run --gpus all -it --rm -p 8888:8888 -v $(pwd):/home/ubuntu/data htorch/hasktorch-jupyter:latest-cu11
 
 Finally, open localhost:8888 and find the `MNIST.ipynb` notebook in data/.

@@ -2,7 +2,7 @@
 
 Previously we have calculated our backpropagation by hand.  Now, we think
 how this process can be simplified with automatic differentiation.  [The
-tutorial](http://penkovsky.com/post/neural-networks-3/) about neural
+tutorial](https://penkovsky.com/neural-networks/day3/) about neural
 networks.
 
 

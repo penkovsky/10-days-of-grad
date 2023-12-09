@@ -2,7 +2,7 @@
 
 ![Efficiency of multilayer neural network architectures](http://penkovsky.com/img/posts/neural-networks/spirals-adam.gif)
 
-[The tutorial](http://penkovsky.com/post/neural-networks-2/) about neural networks.
+[The tutorial](https://penkovsky.com/neural-networks/day2/) about neural networks.
 
 ## How To Build
 
