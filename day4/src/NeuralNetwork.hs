@@ -272,11 +272,6 @@ pass phase net (x, tgt) = (pred, grads)
         b = br (rows inp)  -- Broadcast (replicate) rows from 1 to batch size
         m = recip $ (fromIntegral $ rows inp)
 
-        -- There is a bug in Massiv 0.3.2.0, see
-        -- https://github.com/lehins/massiv/pull/76
-        sqrtB :: Source r ix Float => Array r ix Float -> Array D ix Float
-        sqrtB = A.map sqrt
-
         -- Step 1: mean
         batchMu :: Vector Float
         batchMu = compute $ m `_scale` (_sumRows inp)
@@ -293,7 +288,7 @@ pass phase net (x, tgt) = (pred, grads)
         batchVariance = compute $ m `_scale` (_sumRows sq)
 
         -- Step 5
-        sqrtvar = sqrtB $ batchVariance `addC` eps
+        sqrtvar = sqrtA $ batchVariance `addC` eps
 
         -- Step 6
         ivar = compute $ A.map recip sqrtvar
@@ -354,7 +349,7 @@ pass phase net (x, tgt) = (pred, grads)
 
         -- Alternatively use running stats during Eval phase:
         out1 :: Matrix Float
-        out1 = compute $ (inp .- b mu) ./ (b $ compute $ sqrtB $ variance `addC` eps)
+        out1 = compute $ (inp .- b mu) ./ (b $ compute $ sqrtA $ variance `addC` eps)
 
         out2 = compute $ (b gamma .* out1) .+ b beta
 
