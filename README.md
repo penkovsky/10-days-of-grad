@@ -10,5 +10,5 @@
 * [Day 6](day6/): Binarized neural networks
 * [Day 7](day7/): Deep Learning with Hasktorch
 * [Day 8](day8/): Model Uncertainty Estimation
-* Day 9
+* [Day 9](day9/): Variational Autoencoders
 * Day 10
