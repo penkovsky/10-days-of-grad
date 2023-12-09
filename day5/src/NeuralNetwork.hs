@@ -80,8 +80,6 @@ import qualified System.Random.MWC as MWC
 import           System.Random.MWC ( createSystemRandom )
 import           System.Random.MWC.Distributions ( standard )
 
--- TODO hlint
-
 -- Note that images are volumes of channels x width x height, whereas
 -- mini-batches are volumes-4 of batch size x channels x width x height.
 -- Similarly, convolutional filter weights are volumes-4 of
@@ -99,7 +97,7 @@ data Linear a = Linear { _weights :: !(Matrix a)
   deriving (Show, Generic)
 
 -- | Convolutional layer weights. We omit biases for simplicity.
-data Conv2d a = Conv2d { _kernels :: !(Volume4 a) }
+newtype Conv2d a = Conv2d { _kernels :: Volume4 a }
   deriving (Show, Generic)
 
 instance NFData (Linear a)
@@ -178,7 +176,7 @@ instance (Num a, Unbox a, Index ix) => Num (Array U ix a) where
     x + y       = maybe (error $ "Dimension mismatch " ++ show (size x, size y)) compute (delay x .+. delay y)
     x - y       = maybe (error $ "Dimension mismatch " ++ show (size x, size y)) compute (delay x .-. delay y)
     x * y       = maybe (error $ "Dimension mismatch " ++ show (size x, size y)) compute (delay x .*. delay y)
-    negate x    = computeMap negate x
+    negate      = computeMap negate
     -- Maybe define later, when we will actually need those
     abs         = error "Please define abs"
     signum      = error "Please define signum"
@@ -312,7 +310,7 @@ _deconv2d (Padding (Sz szp1) (Sz szp2) pb) dz x = res
     base0 = applyStencil pad3 (sten 0) x
 
     Sz szW0 = size base0
-    szW = (Sz (1 :> szW0))
+    szW = Sz (1 :> szW0)
     rsz = resize' szW. computeAs U
 
     base = rsz base0
@@ -468,7 +466,7 @@ flatten :: Reifies s W
 flatten = liftOp1. op1 $ \x ->
   let sz0@(Sz (bs :> ch :> h :. w)) = size x
       sz = Sz2 bs (ch * h * w)
-   in (resize' sz x, \dz -> resize' sz0 dz)
+   in (resize' sz x, resize' sz0)
 
 -- | A neural network may work differently in training and evaluation modes
 data Phase = Train | Eval deriving (Show, Eq)
@@ -478,13 +476,13 @@ rand
   :: (Mutable r ix e, MWC.Variate e) =>
      (e, e) -> Sz ix -> IO (Array r ix e)
 rand rng sz = do
-    gens <- initWorkerStates Par (\_ -> createSystemRandom)
+    gens <- initWorkerStates Par (const createSystemRandom)
     randomArrayWS gens sz (MWC.uniformR rng)
 
 -- | Random values from the Normal distribution
 randn :: forall e ix. (Fractional e, Index ix, Unbox e) => Sz ix -> IO (Array U ix e)
 randn sz = do
-    gens <- initWorkerStates Par (\_ -> createSystemRandom)
+    gens <- initWorkerStates Par (const createSystemRandom)
     r <- randomArrayWS gens sz standard :: IO (Array P ix Double)
     return (compute $ A.map realToFrac r)
 
@@ -510,7 +508,7 @@ linearW' x dy =
   let trX = compute $ transpose x :: Matrix Float
       prod = maybe (error "Inconsistent dimensions in linearW'") id (trX |*| dy)
       m = recip $ fromIntegral (rows x)
-  in compute $ m *. (delay prod)
+  in compute $ m *. delay prod
 
 linearX' :: Matrix Float
         -> Matrix Float
@@ -519,13 +517,13 @@ linearX' w dy = maybe (error "Inconsistent dimensions in linearX'") compute (dy 
 
 -- | Bias gradient
 bias' :: Matrix Float -> Vector Float
-bias' dY = compute $ m *. (sumRows_ dY)
+bias' dY = compute $ m *. sumRows_ dY
   where
     m = recip $ fromIntegral $ rows dY
 
 -- | Forward pass in a neural network (inference)
 forward :: ConvNet Float -> Volume4 Float -> Matrix Float
-forward net dta = evalBP (flip lenet dta) net
+forward net dta = evalBP (`lenet` dta) net
 
 softmax_ :: Matrix Float -> Matrix Float
 softmax_ x =
@@ -548,7 +546,7 @@ crossEntropyLoss x targ n = _ce y
     -- Gradients only
     _ce = liftOp1. op1 $ \y_ ->
       (zeros  -- Lazy to implement for now
-      , \_ -> (softmax_ y_) - targ  -- Gradients
+      , \_ -> softmax_ y_ - targ  -- Gradients
       )
 {-# INLINE crossEntropyLoss #-}
 
@@ -565,12 +563,12 @@ colsLike v m = br1 (Sz (cols m)) v
 -- | Broadcast by the given number of rows
 br :: Manifest r Ix1 Float
    => Sz1 -> Array r Ix1 Float -> Array D Ix2 Float
-br rows' v = expandWithin Dim2 rows' const v
+br rows' = expandWithin Dim2 rows' const
 
 -- | Broadcast by the given number of cols
 br1 :: Manifest r Ix1 Float
    => Sz1 -> Array r Ix1 Float -> Array D Ix2 Float
-br1 rows' v = expandWithin Dim1 rows' const v
+br1 rows' = expandWithin Dim1 rows' const
 
 -- | Stochastic gradient descent
 sgd :: Monad m
@@ -591,16 +589,6 @@ sgd lr n net0 dataStream = iterN n epochStep net0
     _trainStep net (x, targ) = trainStep lr x targ net
     {-# INLINE _trainStep #-}
 
--- subtractGrad
---   :: (Num e, MonadThrow m, Source r1 ix e, Source r2 ix e) =>
---      e -> Array r1 ix e -> Array r2 ix e -> m (Array D ix e)
--- subtractGrad lr w dW = delay w .-. (lr *. delay dW)
---
--- subtractGradMaybe
---   :: (Mutable r ix e, Num e, Source r1 ix e, Source r2 ix e) =>
---      e -> Array r1 ix e -> Array r2 ix e -> Array r ix e
--- subtractGradMaybe lr w dW = maybe (error "Inconsistent dimensions") compute (subtractGrad lr w dW)
-
 -- | Gradient descent step
 trainStep
   :: Float  -- ^ Learning rate
@@ -608,27 +596,27 @@ trainStep
   -> Matrix Float  -- ^ Targets
   -> ConvNet Float  -- ^ Initial network
   -> ConvNet Float
-trainStep lr !x !targ !n = n - (computeMap' (lr *) (gradBP (crossEntropyLoss x targ) n))
+trainStep lr !x !targ !n = n - computeMap' (lr *) (gradBP (crossEntropyLoss x targ) n)
+{-# INLINE trainStep #-}
+
+-- This could be improved:
 -- The problem is that realToFrac does not know about the shape.
 -- This can be solved having that information on the type level.
 -- Conv2d a i o k, i = in channels, o = out channels, k = square kernel size
 -- and Linear a i o, i = inputs, o = outputs.
 -- trainStep lr !x !targ !n = n - realToFrac lr * gradBP (loss x targ) n
-{-# INLINE trainStep #-}
-
--- This could be definitely improved: see comments above (`trainStep`)
 computeMap' :: (Float -> Float) -> LeNet Float -> LeNet Float
-computeMap' f (LeNet { _conv1 = Conv2d k1
-                     , _conv2 = Conv2d k2
-                     , _fc1 = Linear w1 b1
-                     , _fc2 = Linear w2 b2
-                     , _fc3 = Linear w3 b3
-                     }) = LeNet { _conv1 = Conv2d (computeMap f k1)
-                                , _conv2 = Conv2d (computeMap f k2)
-                                , _fc1 = Linear (computeMap f w1) (computeMap f b1)
-                                , _fc2 = Linear (computeMap f w2) (computeMap f b2)
-                                , _fc3 = Linear (computeMap f w3) (computeMap f b3)
-                                }
+computeMap' f LeNet { _conv1 = Conv2d k1
+                    , _conv2 = Conv2d k2
+                    , _fc1 = Linear w1 b1
+                    , _fc2 = Linear w2 b2
+                    , _fc3 = Linear w3 b3
+                    } = LeNet { _conv1 = Conv2d (computeMap f k1)
+                               , _conv2 = Conv2d (computeMap f k2)
+                               , _fc1 = Linear (computeMap f w1) (computeMap f b1)
+                               , _fc2 = Linear (computeMap f w2) (computeMap f b2)
+                               , _fc3 = Linear (computeMap f w3) (computeMap f b3)
+                               }
 
 -- | Strict left fold
 iterN :: Monad m => Int -> (a -> m a) -> a -> m a
@@ -646,7 +634,7 @@ randLinear sz@(Sz2 _ nout) = do
 _genWeights :: Index ix => Sz ix -> IO (Array U ix Float)
 _genWeights sz = do
     a <- randn sz
-    return (compute $ k *. (delay a))
+    return $ compute (k *. delay a)
   where
     -- Weight scaling factor. Can also be dependent on `sz`.
     k = 0.01
@@ -659,7 +647,10 @@ randConv2d sz = do
 
 randNetwork :: IO (ConvNet Float)
 randNetwork = do
+  -- Generate a new conv layer weights:
+  -- 6 out channels, 1 input channel, kernel size: 5 x 5
   _conv1 <- randConv2d (Sz4 6 1 5 5)
+  -- 16 out channels, 6 input channels, kernel size: 5 x 5
   _conv2 <- randConv2d (Sz4 16 6 5 5)
   let [i, h1, h2, o] = [16 * 5 * 5, 120, 84, 10]
   _fc1 <- randLinear (Sz2 i h1)
@@ -734,5 +725,3 @@ sumCols :: Reifies s W
     -> BVar s (Vector Float)
 sumCols = liftOp1. op1 $ \x ->
   (compute $ sumCols_ x, \dY -> compute $ dY `colsLike` x)
-
--- TODO: a module with differentiable expA, (|*|), (.*.), (./.), (.+.), and (.-.)
