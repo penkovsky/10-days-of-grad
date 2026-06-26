@@ -198,7 +198,8 @@ recordPoints logname net = P.foldM step begin done. enumerateData
     step :: () -> ((Tensor, Tensor), Int) -> IO ()
     step () args = do
       let ((input, labels), i) = toLocalModel' args
-          (encMu, _) = encode net input
+          -- Rescale pixel values [0, 255] -> [0, 1.0], matching training
+          (encMu, _) = encode net (input / 255.0)
           batchSize = head $ shape encMu
 
       let s = toStr $ Torch.cat (Dim 1) [reshape [-1, 1] labels, encMu]
